@@ -1,9 +1,60 @@
 import { Request, Response } from 'express';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
-import { getOrCreateAssociatedTokenAccount, transfer, getAccount, getMint, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
+import { getOrCreateAssociatedTokenAccount, getAssociatedTokenAddress, transfer, getAccount, getMint, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 import dotenv from 'dotenv';
 
 dotenv.config();
+
+export const getEquinoxBalance = async (req: Request, res: Response) => {
+  const { walletAddress } = req.params; // Get wallet address from request parameters
+  const connection = new Connection(process.env.SOLANA_NETWORK!, 'confirmed');
+  const mintAddress = new PublicKey(process.env.EQUINOX_MINT_ADDRESS!); // Use Equinox mint address
+
+  try {
+    const walletPublicKey = new PublicKey(walletAddress);
+
+    // Derive the associated token account for the wallet and mint
+    const tokenAccountAddress = await getAssociatedTokenAddress(
+      mintAddress,
+      walletPublicKey,
+      false, // Not a PDA (Program Derived Address)
+      TOKEN_2022_PROGRAM_ID
+    );
+
+    // Fetch the token account details
+    const tokenAccount = await getAccount(
+      connection,
+      tokenAccountAddress,
+      undefined,
+      TOKEN_2022_PROGRAM_ID
+    );
+
+    // Fetch mint details to calculate the balance
+    const mint = await getMint(connection, mintAddress, undefined, TOKEN_2022_PROGRAM_ID);
+    const balance = Number(tokenAccount.amount) / Math.pow(10, mint.decimals);
+
+    res.json({
+      walletAddress: walletPublicKey.toBase58(),
+      tokenAccountAddress: tokenAccountAddress.toBase58(),
+      balance,
+      mintAddress: mintAddress.toBase58()
+    });
+  } catch (error) {
+    console.error('Error retrieving Equinox balance:', error);
+
+    // Handle the case where the associated token account does not exist
+    if (error instanceof Error && error.message.includes('Failed to find account')) {
+      return res.status(404).json({
+        error: 'No associated token account found for the provided wallet address and mint address.',
+        walletAddress,
+        mintAddress: mintAddress.toBase58()
+      });
+    }
+    
+    res.status(500).json({ error: (error as any).message });
+  }
+};
+
 
 export const transferToken = async (req: Request, res: Response) => {
   const { multiplier } = req.body;
