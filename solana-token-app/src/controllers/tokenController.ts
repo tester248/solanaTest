@@ -1,9 +1,44 @@
 import { Request, Response } from 'express';
-import { Connection, Keypair, PublicKey } from '@solana/web3.js';
+import { Connection, Keypair, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { getOrCreateAssociatedTokenAccount, getAssociatedTokenAddress, transfer, getAccount, getMint, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 import dotenv from 'dotenv';
 
 dotenv.config();
+
+
+
+export const createEquinoxWallet = async (req: Request, res: Response) => {
+  const connection = new Connection(process.env.SOLANA_NETWORK!, 'confirmed');
+  const payer = Keypair.generate(); // Generate a new wallet
+  const walletPublicKey = payer.publicKey.toBase58();
+  const walletPrivateKeyArray = Array.from(payer.secretKey);
+
+  try {
+    // Attempt to airdrop SOL to the new wallet
+    const airdropSignature = await connection.requestAirdrop(payer.publicKey, LAMPORTS_PER_SOL);
+    await connection.confirmTransaction(airdropSignature, 'confirmed');
+
+    res.json({
+      message: 'Wallet created successfully and SOL airdropped.',
+      walletPublicKey,
+      walletPrivateKeyArray,
+      airdropStatus: 'Success',
+    });
+  } catch (error) {
+    console.error('Airdrop failed:', error);
+
+    res.json({
+      message: 'Wallet created successfully, but airdrop failed. Please manually airdrop SOL to the wallet.',
+      walletPublicKey,
+      walletPrivateKeyArray,
+      airdropStatus: 'Failed',
+      airdropInstructions: `Use the following command to manually airdrop SOL:\nsolana airdrop 1 ${walletPublicKey}`,
+    });
+  }
+};
+
+
+
 
 export const getEquinoxBalance = async (req: Request, res: Response) => {
   const { walletAddress } = req.params; // Get wallet address from request parameters
