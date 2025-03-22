@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-export const transferEquinoxToken = async (req: Request, res: Response) => {
+export const buyEquinoxToken = async (req: Request, res: Response) => {
   const { recipientWalletAddress, amount } = req.body; // Get recipient and amount from the request body
   const connection = new Connection(process.env.SOLANA_NETWORK!, 'confirmed');
   const mintAddress = new PublicKey(process.env.EQUINOX_MINT_ADDRESS!); // Use a specific mint address for Equinox

@@ -1,14 +1,15 @@
 import { Router } from 'express';
 import { transferToken } from '../controllers/tokenController';
-import { transferEquinoxToken } from '../transferEquinoxToken'
+import { buyEquinoxToken } from '../buyEquinoxToken'
 import { getEquinoxBalance } from '../controllers/tokenController'; // Import the new controller
-
+import { transferEquinox } from '../transferEquinox'; // Import the new controller
 
 
 const router = Router();
 
 router.post('/transfer', transferToken);
-router.post('/equinoxtransfer', transferEquinoxToken);
+router.post('/buyequinox', buyEquinoxToken);
+router.post('/transferequinox', transferEquinox); // New route for token transfer
 router.get('/equinoxbalance/:walletAddress', getEquinoxBalance); // New route for balance retrieval
 
 
