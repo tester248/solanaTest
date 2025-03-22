@@ -1,18 +1,16 @@
-import { Request, Response } from 'express';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
-import { getOrCreateAssociatedTokenAccount, transfer, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
+import { getOrCreateAssociatedTokenAccount, transfer, getAccount, getMint, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-export const transferEquinoxToken = async (req: Request, res: Response) => {
-  const { recipientWalletAddress, amount } = req.body; // Get recipient and amount from the request body
+const transferEquinoxToken = async () => {
   const connection = new Connection(process.env.SOLANA_NETWORK!, 'confirmed');
-  const mintAddress = new PublicKey(process.env.EQUINOX_MINT_ADDRESS!); // Use a specific mint address for Equinox
+  const mintAddress = new PublicKey('mnts9NMk2ZPtcUjtcRtHgXz2ungkrrCQzXsCFPTGTae');
+  const distributorWallet = new PublicKey('kiQR5Wuj9qHegtDnH1aumUX9SbDt5haN6kirmUrStdo');
+  const recipientWallet = new PublicKey('8iXrWkKcLTdgtpWyXMxNEwg4cscsWeEEfct58B8ZvZgN');
   const payerSecretKey = Uint8Array.from(JSON.parse(process.env.PAYER_SECRET_KEY!));
   const payer = Keypair.fromSecretKey(payerSecretKey);
-  const distributorWallet = payer.publicKey; // Use the payer as the distributor
-  const recipientWallet = new PublicKey(recipientWalletAddress); // Dynamic recipient wallet
 
   try {
     // Ensure distributor token account is initialized
@@ -43,6 +41,18 @@ export const transferEquinoxToken = async (req: Request, res: Response) => {
     console.log('Distributor Token Account:', distributorTokenAccount.address.toBase58());
     console.log('Recipient Token Account:', recipientTokenAccount.address.toBase58());
 
+    // Check distributor token balance
+    const distributorTokenBalance = await getAccount(connection, distributorTokenAccount.address, undefined, TOKEN_2022_PROGRAM_ID);
+    const mint = await getMint(connection, mintAddress, undefined, TOKEN_2022_PROGRAM_ID);
+    const balance = Number(distributorTokenBalance.amount) / Math.pow(10, mint.decimals);
+    console.log(`Distributor Token Balance: ${balance}`);
+
+    // Ensure sufficient balance
+    const amountToTransfer = 1000; // Adjust the amount as needed
+    if (balance < amountToTransfer) {
+      throw new Error('Insufficient funds in distributor token account');
+    }
+
     // Transfer tokens to recipient
     await transfer(
       connection,
@@ -50,19 +60,16 @@ export const transferEquinoxToken = async (req: Request, res: Response) => {
       distributorTokenAccount.address,
       recipientTokenAccount.address,
       payer.publicKey,
-      BigInt(amount) * BigInt(Math.pow(10, 9)), // Assuming 9 decimals
+      BigInt(amountToTransfer) * BigInt(Math.pow(10, mint.decimals)),
       [],
       undefined,
       TOKEN_2022_PROGRAM_ID
     );
 
-    res.json({
-      message: `Successfully transferred ${amount} Equinox tokens to ${recipientWallet.toBase58()}`,
-      recipientWallet: recipientWallet.toBase58(),
-      recipientTokenAccount: recipientTokenAccount.address.toBase58()
-    });
+    console.log(`Successfully transferred ${amountToTransfer} Equinox tokens to ${recipientWallet.toBase58()}`);
   } catch (error) {
-    console.error('Error during Equinox token transfer:', error);
-    res.status(500).json({ error: (error as any).message });
+    console.error('Error during token transfer:', error);
   }
 };
+
+transferEquinoxToken();
