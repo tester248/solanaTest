@@ -362,7 +362,7 @@ class AuthService {
   Future<String?> checkRFIDStatus() async {
     try {
       // Replace with your actual API endpoint
-      final response = await http.get(Uri.parse('http://192.168.128.150:5000/rfid-status'));
+      final response = await http.get(Uri.parse('http://192.168.234.150:5000/rfid-status'));
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
