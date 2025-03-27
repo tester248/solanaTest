@@ -1,6 +1,6 @@
 # Solana Token App
 
-This project is a Node.js application that allows you to create and manage custom tokens on the Solana devnet. It provides functionality to create a new token, mint it to a distributor wallet, and transfer tokens to recipient wallets.
+This project is a Node.js application that allows you to create and manage custom tokens on the Solana devnet. It provides functionality to create a new token, mint it to a distributor wallet, transfer tokens to recipient wallets, and perform additional operations like buying tokens, checking balances, and creating wallets.
 
 ## Project Structure
 
@@ -15,14 +15,16 @@ solana-token-app
 │   ├── app.ts                  # Express app setup
 │   ├── createToken.ts          # Logic for creating a new token on Solana devnet
 │   ├── transferToken.ts        # HTTP endpoint for transferring tokens
-│   ├── transferEquinoxToken.ts # Script for transferring Equinox tokens
+│   ├── transferEquinox.ts      # HTTP endpoint for transferring Equinox tokens
+│   ├── buyEquinoxToken.ts      # HTTP endpoint for buying Equinox tokens
 │   ├── standaloneTransfer.js   # Standalone script for transferring tokens
 │   ├── controllers
 │   │   └── tokenController.ts  # Controller for token operations
 │   ├── routes
 │   │   └── tokenRoutes.ts      # Routes for token operations
-│   └── types
-│       └── index.ts            # Type definitions for requests
+│   ├── types
+│   │   └── index.ts            # Type definitions for requests
+│   └── transferEquinoxToken.ts.old # Legacy script for transferring Equinox tokens
 ```
 
 ## Installation
@@ -37,6 +39,17 @@ solana-token-app
    ```sh
    npm install
    ```
+
+## Environment Variables
+
+Set up the `.env` file with the following variables:
+```env
+SOLANA_NETWORK=https://api.devnet.solana.com
+PAYER_SECRET_KEY=<your-payer-secret-key>
+EQUINOX_MINT_ADDRESS=<equinox-mint-address>
+MINT_ADDRESS=<your-mint-address>
+DISTRIBUTOR_WALLET=<distributor-wallet-address>
+```
 
 ## Usage
 
@@ -63,10 +76,47 @@ Then, make a POST request to `http://localhost:3000/api/transfer` with the follo
 
 ### Transferring Equinox Tokens
 
-To transfer Equinox tokens, run the following command:
+To transfer Equinox tokens, make a POST request to:
 ```sh
-npx ts-node src/transferEquinoxToken.ts
+http://localhost:3000/api/transferequinox
 ```
+with the following JSON body:
+```json
+{
+  "payerSecretArray": [<your-payer-secret-array>],
+  "recipientWalletAddress": "<recipient-wallet-address>",
+  "amount": 1000
+}
+```
+
+### Buying Equinox Tokens
+
+To buy Equinox tokens, make a POST request to:
+```sh
+http://localhost:3000/api/buyequinox
+```
+with the following JSON body:
+```json
+{
+  "recipientWalletAddress": "<recipient-wallet-address>",
+  "amount": 500
+}
+```
+
+### Checking Equinox Balance
+
+To check the balance of Equinox tokens for a specific wallet, make a GET request to:
+```sh
+http://localhost:3000/api/equinoxbalance/<wallet-address>
+```
+
+### Creating a Wallet
+
+To create a new wallet, make a GET request to:
+```sh
+http://localhost:3000/api/createwallet
+```
+This will generate a new wallet and attempt to airdrop SOL to it.
 
 ### Standalone Token Transfer
 
@@ -92,6 +142,10 @@ or define env vars in `solana-token-app/.env` and run:
 ```sh
 npm run dev
 ```
+
+## Legacy Scripts
+
+- `transferEquinoxToken.ts.old`: A legacy script for transferring Equinox tokens. This script is no longer actively maintained but can be used for reference.
 
 ## License
 
